@@ -63,7 +63,7 @@ class _MapPageState extends State<MapPage> {
         return Scaffold(
           key: _scaffoldKey,
           appBar: AppBar(
-            title: Text('Map Routing'),
+            title: Text('Saan Jo 0.030'),
             leading: IconButton(
               icon: Icon(Icons.account_circle), // User icon on the left
               onPressed: () {
