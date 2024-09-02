@@ -1,20 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-
-class LoginPage extends StatelessWidget {
-  const LoginPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-      ),
-      body: const LoginForm(),
-    );
-  }
-}
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({Key? key}) : super(key: key);
@@ -25,6 +11,7 @@ class LoginForm extends StatefulWidget {
 
 class _LoginFormState extends State<LoginForm> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -53,11 +40,30 @@ class _LoginFormState extends State<LoginForm> {
                 : const Text('Login'),
           ),
           const SizedBox(height: 16.0),
+          ElevatedButton(
+            onPressed: _isLoading ? null : _signInWithGoogle,
+            child: _isLoading
+                ? const CircularProgressIndicator()
+                : const Text('Login with Google'),
+          ),
+          const SizedBox(height: 16.0),
           TextButton(
             onPressed: () {
               Navigator.pushNamed(context, '/register');
             },
             child: const Text('Don\'t have an account? Register here.'),
+          ),
+          const SizedBox(height: 16.0),
+          TextButton(
+            onPressed: _continueAsGuest,
+            child: const Text('Continue as Guest'),
+          ),
+          const SizedBox(height: 16.0),
+          TextButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/developer_dashboard');
+            },
+            child: const Text('Go to Developer Dashboard'),
           ),
         ],
       ),
@@ -87,5 +93,37 @@ class _LoginFormState extends State<LoginForm> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await _auth.signInWithCredential(credential);
+
+      Navigator.pushNamed(context, '/map_page');
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'An error occurred')),
+      );
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void _continueAsGuest() {
+    Navigator.pushNamed(context, '/map_page');
   }
 }
