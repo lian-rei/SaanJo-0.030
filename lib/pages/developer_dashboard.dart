@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
 class DeveloperDashboard extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Developer Dashboard'),
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Color.fromARGB(190, 250, 79, 11),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -19,6 +22,7 @@ class DeveloperDashboard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                color: Colors.black
               ),
               textAlign: TextAlign.center,
             ),
@@ -39,7 +43,7 @@ class DeveloperDashboard extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(200, 60), // Width and height of the button
                 padding: EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.green, // Background color of the button
+                backgroundColor: Color.fromARGB(255, 255, 202, 86), // Background color of the button
                 textStyle: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -55,7 +59,7 @@ class DeveloperDashboard extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(200, 60), // Width and height of the button
                 padding: EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.red, // Background color of the button
+                backgroundColor:  Color.fromARGB(255, 64, 226, 186), // Background color of the button
                 textStyle: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -77,11 +81,12 @@ class DeveloperDashboard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              child: Text('Modify Terminal'),
-            ),
-          ],
+                child: Text('Modify Terminal'),
+              ),
+            ],
+          ),
         ),
-      ),
+      )
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/map_controller.dart';
 import '../models/terminal.dart';
 
+
 class MapPage extends StatefulWidget {
   @override
   _MapPageState createState() => _MapPageState();
@@ -15,6 +16,7 @@ class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late Future<DocumentSnapshot> _userData;
+  bool _isGuest = true;
   bool _isDarkMode = false; // Track dark mode status
   Key _mapKey = UniqueKey(); // Key to force rebuild of MapboxMap widget
 
@@ -33,8 +35,10 @@ class _MapPageState extends State<MapPage> {
 
     // Load user data from Firestore
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    if (_isGuest) {
+      if (user != null) {
       _userData = FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    }
     }
   }
 

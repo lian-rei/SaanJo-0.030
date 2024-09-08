@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:saanjologin/widgets/my_button.dart';
-import 'package:saanjologin/widgets/my_textfield.dart';
 import 'package:saanjologin/widgets/square_tile.dart';
+import 'package:saanjologin/pages/map_page.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({Key? key}) : super(key: key);
@@ -15,123 +15,134 @@ class LoginForm extends StatefulWidget {
 class _LoginFormState extends State<LoginForm> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  void SignUserIn() {}
-
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color.fromARGB(0, 255, 255, 255),
+      color: Colors.white,
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // LOGO
+          Image.asset('assets/logo2.png', height: 250),
 
-          //LOGO
-          Image.asset(
-            'assets/logo2.png', height: 250,),
+          const SizedBox(height: 50),
 
-            const SizedBox(height: 50),
-
-          //Welcome to Saan Jo!
-          Text('Welcome to Saan Jo!',
-          style: TextStyle(
-            color: Colors.grey[700],
-            fontSize:16,
+          // Welcome to Saan Jo!
+          Text(
+            'Welcome to Saan Jo!',
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 16,
             ),
           ),
 
           const SizedBox(height: 25),
 
-          MyTextfield(
-            controller: _usernameController,
-            hintText: 'Username: ',
-            obscureText: false,
+          // Email TextField
+          TextField(
+            controller: _emailController,
+            decoration: const InputDecoration(labelText: 'Email'),
           ),
 
           const SizedBox(height: 10),
 
-            //Password (TF)
-            MyTextfield(
-              controller: _passwordController,
-              hintText: 'Password:',
-              obscureText: true,
-            ),
+          // Password TextField
+          TextField(
+            controller: _passwordController,
+            decoration: const InputDecoration(labelText: 'Password'),
+            obscureText: true,
+          ),
 
-            const SizedBox(height: 10),
+          const SizedBox(height: 10),
 
-            //Forgot Password?
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    'Forgot Password?',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
+         
 
-            const SizedBox(height: 25),
+          const SizedBox(height: 25),
 
-            //Sign in button
-            MyButton(
-              onTap: SignUserIn,
-            ),
+          // Sign in button
+          MyButton(
+            onTap: _isLoading ? null : _login,
+          ),
 
-            const SizedBox(height: 50),
-            //or continue with
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      thickness: 0.5,
-                      color: Colors.grey[400],
-                    ),
-                  ),
+          const SizedBox(height: 50),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                    child: Text(
-                      'Or continue with',
-                      style: TextStyle(color: Colors.grey[700]),
-                      ),
-                  ),
-                  
-                  
-                  Expanded(
-                    child: Divider(
-                      thickness: 0.5,
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 50),
-
-            //google + apple sign in buttons
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          // Or continue with
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25.0),
+            child: Row(
               children: [
-                SquareTile(imagePath: 'assets/apple.png'),
-
-                SizedBox(width: 25),
-
-                SquareTile(imagePath: 'assets/Google.png'),
+                Expanded(
+                  child: Divider(
+                    thickness: 0.5,
+                    color: Colors.grey[400],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                  child: Text(
+                    'Or continue with',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                ),
+                Expanded(
+                  child: Divider(
+                    thickness: 0.5,
+                    color: Colors.grey[400],
+                  ),
+                ),
               ],
             ),
+          ),
 
-            const SizedBox(height: 50),
+          const SizedBox(height: 50),
+
+          // Google sign in button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SquareTile(
+                imagePath: 'assets/apple.png',
+                onTap: _isLoading ? null : _signInWithGoogle,
+              ),
+              SizedBox(width: 25),
+              SquareTile(
+                imagePath: 'assets/Google.png',
+                onTap: _isLoading ? null : _signInWithGoogle,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Navigation buttons
+          TextButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/register');
+            },
+            child: const Text('Don\'t have an account? Register here.'),
+          ),
+
+          const SizedBox(height: 5.0),
+
+          TextButton(
+            onPressed: _continueAsGuest,
+            child: const Text('Continue as Guest'),
+          ),
+
+          const SizedBox(height: 5.0),
+
+          TextButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/developer_dashboard');
+            },
+            child: const Text('Go to Developer Dashboard'),
+          ),
         ],
       ),
     );

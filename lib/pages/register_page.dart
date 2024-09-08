@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:saanjologin/widgets/my_checkbox.dart';
+import 'package:saanjologin/widgets/my_textfield.dart';
+import 'package:saanjologin/widgets/my_checkbox.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -18,52 +21,106 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
+  bool _isTermsAccepted = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Register'),
+        title: const Text('Create an Account'),
+        backgroundColor: Colors.white,
       ),
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            TextField(
+            Image.asset(
+              'assets/logo2.png', height: 250,
+            ),
+            const SizedBox(height: 10),
+            MyTextfield(
               controller: _firstNameController,
-              decoration: const InputDecoration(labelText: 'First Name'),
+              hintText: 'First Name: ',
+              obscureText: false,
             ),
-            TextField(
+            const SizedBox(height: 10),
+            MyTextfield(
               controller: _lastNameController,
-              decoration: const InputDecoration(labelText: 'Last Name'),
+              hintText: 'Last Name: ',
+              obscureText: false,
             ),
-            TextField(
+            const SizedBox(height: 10),
+            MyTextfield(
               controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
+              hintText: 'Username: ',
+              obscureText: false,
             ),
-            TextField(
+            const SizedBox(height: 10),
+            MyTextfield(
               controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
+              hintText: 'Email: ',
+              obscureText: false,
             ),
-            TextField(
+            const SizedBox(height: 10),
+            MyTextfield(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
+              hintText: 'Password: ',
               obscureText: true,
             ),
-            TextField(
+            const SizedBox(height: 10),
+            MyTextfield(
               controller: _confirmPasswordController,
-              decoration: const InputDecoration(labelText: 'Confirm Password'),
+              hintText: 'Confirm Password: ',
               obscureText: true,
             ),
+
+
             const SizedBox(height: 16.0),
+            
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CustomCheckbox(
+                  isChecked: _isTermsAccepted,
+                  onChanged: (bool? newValue) {
+                    setState(() {
+                      _isTermsAccepted = newValue ?? false;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8.0),
+                GestureDetector(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Terms and Conditions Clicked'),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    "I agree to the Terms and Conditions",
+                    style: TextStyle(
+                      color: Colors.blue,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16.0),
+
             ElevatedButton(
               onPressed: _isLoading ? null : _register,
               child: _isLoading
                   ? const CircularProgressIndicator()
                   : const Text('Register'),
             ),
+
             const SizedBox(height: 16.0),
+
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
@@ -77,6 +134,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _register() async {
+    if (!_isTermsAccepted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must accept the terms to register')),
+      );
+      return;
+    }
+
     if (_emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty ||
