@@ -8,18 +8,47 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="sanjologin">
+
+  <!-- Google Sign-In client ID -->
   <meta name="google-signin-client_id" content="253316844614-7ricaqbfpnt67eh9q4vhhi8ur1bt3pj1.apps.googleusercontent.com">
+
+  <!-- Icons -->
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png"/>
+  
+  <!-- Page title -->
   <title>sanjologin</title>
+  
+  <!-- App Manifest -->
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Mapbox CSS -->
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
+  
+  <!-- Mapbox JS -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
+  
+  <!-- Google API Script (for Google Sign-In) -->
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+
+  <!-- Load Google API library and initialize auth2 -->
+  <script>
+    function onLoad() {
+      gapi.load('auth2', function() {
+        gapi.auth2.init({
+          client_id: '253316844614-7ricaqbfpnt67eh9q4vhhi8ur1bt3pj1.apps.googleusercontent.com'
+        });
+      });
+    }
+  </script>
+
+  <!-- Flutter Loader -->
   <script>
     const serviceWorkerVersion = null;
   </script>
   <script src="flutter.js" defer></script>
 </head>
+
 <body>
   <script>
     window.addEventListener('load', function(ev) {
@@ -33,6 +62,9 @@
           });
         }
       });
+
+      // Initialize Google API client after page load
+      onLoad();
     });
   </script>
 </body>

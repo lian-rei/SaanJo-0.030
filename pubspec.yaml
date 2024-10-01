@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   firebase_core: ^2.30.1
   firebase_auth: ^4.19.4
+  firebase_storage: any
   cloud_firestore: ^4.17.2
   google_sign_in: any
   mapbox_gl: ^0.14.0
@@ -23,6 +24,8 @@ dependencies:
   http: ^1.2.1
   image: ^3.0.1
   image_picker: ^0.8.7+3
+  flutter_colorpicker: any
+  mapbox_search: any
   
 
 dev_dependencies:
@@ -39,3 +42,4 @@ flutter:
     - assets/apple.png
     - assets/Google.png
     - assets/logo2.png
+    - assets/pin.png

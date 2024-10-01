@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:saanjologin/widgets/my_checkbox.dart';
 import 'package:saanjologin/widgets/my_textfield.dart';
-import 'package:saanjologin/widgets/my_checkbox.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);

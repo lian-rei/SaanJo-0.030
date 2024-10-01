@@ -4,8 +4,8 @@ import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/map_controller.dart';
-import '../models/terminal.dart';
-
+import '../tokens/tokens.dart';
+import '../pages/routing_page.dart';
 
 class MapPage extends StatefulWidget {
   @override
@@ -15,30 +15,69 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  late Future<DocumentSnapshot> _userData;
-  bool _isGuest = true;
-  bool _isDarkMode = false; // Track dark mode status
-  Key _mapKey = UniqueKey(); // Key to force rebuild of MapboxMap widget
+  Future<DocumentSnapshot<Object?>>? _userData; // For logged-in users
+  bool _isDarkMode = false;
+  Key _mapKey = UniqueKey();
+  Map<String, String>? _guestUserData; // For guest user data
+  bool _isFloatingWidgetVisible = false; // To control the floating widget visibility
+  Map<String, dynamic>? _floatingWidgetData; // For place details
+  final AccessToken _accessToken = AccessToken();
+  int _currentIndex = 1; // Default to the map (terminals page)
 
   @override
   void initState() {
     super.initState();
     _mapController.initializeLocationService();
     _mapController.addListener(() {
-      if (_mapController.selectedTerminal != null) {
-        print("Terminal selected: ${_mapController.selectedTerminal?.name}");
-        _openRouteDrawer();
+      setState(() {
+        _isFloatingWidgetVisible = _mapController.selectedTerminal != null;
+        if (_isFloatingWidgetVisible) {
+          _showTerminalDetails(); // Fetch details when a terminal is selected
+        }
+      });
+    });
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (arguments != null) {
+        setState(() {
+          _guestUserData = {
+            'firstName': 'Guest',
+            'lastName': '',
+            'username': 'guest_user',
+          };
+          _userData = null; // No user data for guest
+        });
       } else {
-        print("No terminal selected.");
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          setState(() {
+            _userData = FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+          });
+        } else {
+          _userData = null; // No user data if not logged in
+        }
       }
     });
+  }
 
-    // Load user data from Firestore
-    final user = FirebaseAuth.instance.currentUser;
-    if (_isGuest) {
-      if (user != null) {
-      _userData = FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    }
+  Future<void> _showTerminalDetails() async {
+    if (_mapController.selectedTerminal != null) {
+      final terminal = _mapController.selectedTerminal!;
+      try {
+        final placeDetails = await terminal.fetchPlaceDetails(_accessToken.mapboxaccesstoken);
+        if (placeDetails != null) {
+          setState(() {
+            _floatingWidgetData = {
+              'name': placeDetails['text'] ?? 'Unknown Place',
+              'description': placeDetails['place_name'] ?? 'No description available',
+              'imageUrl': placeDetails['image'] ?? 'default_image_url.jpg', // Update as needed
+            };
+          });
+        }
+      } catch (e) {
+        print('Error fetching place details: $e');
+      }
     }
   }
 
@@ -47,8 +86,26 @@ class _MapPageState extends State<MapPage> {
       _isDarkMode = value;
       _mapKey = UniqueKey(); // Force rebuild of MapboxMap widget
     });
-    print("Dark Mode: $_isDarkMode"); // Debug statement
   }
+
+  void _closeFloatingWidget() {
+    _mapController.clearSelectedTerminal(); // Clear the selected terminal
+    setState(() {
+      _isFloatingWidgetVisible = false; // Close the floating widget
+      _floatingWidgetData = null; // Clear floating widget data
+    });
+  }
+
+  void _onTabTapped(int index) {
+  setState(() {
+    _currentIndex = index;
+    if (index == 2) { // Check if routing tab is tapped
+      Navigator.of(context).push(MaterialPageRoute(
+  builder: (context) => RoutingPage(mapController: _mapController), // Pass the MapController here
+));
+    }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -67,57 +124,124 @@ class _MapPageState extends State<MapPage> {
         return Scaffold(
           key: _scaffoldKey,
           appBar: AppBar(
-            title: Text('Saan Jo 0.030'),
+            title: Text('Saan Jo 0.060'),
             leading: IconButton(
-              icon: Icon(Icons.account_circle), // User icon on the left
+              icon: Icon(Icons.account_circle),
               onPressed: () {
-                _scaffoldKey.currentState?.openDrawer(); // Open user drawer
+                _scaffoldKey.currentState?.openDrawer();
               },
             ),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.directions),
-                onPressed: null,
-              ),
-            ],
           ),
-          body: Stack(
-            children: [
-              MapboxMap(
-                key: _mapKey, // Use the key to force rebuild
-                accessToken: 'pk.eyJ1IjoicmVpamkyMDAyIiwiYSI6ImNsdnV6c2hhZzFxZTAybG1oMzJoeDNtOGQifQ.0hCQ02IhCilBVh-DhFDioQ',
-                styleString: _isDarkMode
-                    ? 'https://api.mapbox.com/styles/v1/reiji2002/clvwkctw3025301qr5ebn3huq/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoicmVpamkyMDAyIiwiYSI6ImNsdnV6b2Q5YzFzMjgya214ZW5rZnFwZTEifQ.pEJZ0EOKW3tMR0wxmr--cQ'
-                    : 'https://api.mapbox.com/styles/v1/reiji2002/clvxk6ihd011v01pccts41fc7/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoicmVpamkyMDAyIiwiYSI6ImNsdnV6b2Q5YzFzMjgya214ZW5rZnFwZTEifQ.pEJZ0EOKW3tMR0wxmr--cQ',
-                onMapCreated: (controller) {
-                  _mapController.onMapCreated(controller);
-                },
-                onStyleLoadedCallback: () {
-                  _mapController.onStyleLoaded();
-                },
-                initialCameraPosition: CameraPosition(
-                  target: LatLng(position.latitude, position.longitude),
-                  zoom: 14.0,
+          body: GestureDetector(
+            onTap: () {
+              if (_isFloatingWidgetVisible) {
+                _closeFloatingWidget(); // Close the widget when tapping outside
+              }
+            },
+            child: Stack(
+              children: [
+                Container(
+                  height: double.infinity,
+                  width: double.infinity,
+                  child: MapboxMap(
+                    key: _mapKey,
+                    accessToken: _accessToken.mapboxaccesstoken,
+                    styleString: _isDarkMode
+                        ? 'https://api.mapbox.com/styles/v1/reiji2002/clvwkctw3025301qr5ebn3huq/tiles/256/{z}/{x}/{y}@2x?access_token=${_accessToken.mapboxaccesstoken}'
+                        : 'https://api.mapbox.com/styles/v1/reiji2002/clvxk6ihd011v01pccts41fc7/tiles/256/{z}/{x}/{y}@2x?access_token=${_accessToken.mapboxaccesstoken}',
+                    onMapCreated: (controller) {
+                      _mapController.onMapCreated(controller);
+                    },
+                    onStyleLoadedCallback: () {
+                      _mapController.onStyleLoaded();
+                    },
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(position.latitude, position.longitude),
+                      zoom: 14.0,
+                    ),
+                    myLocationEnabled: true,
+                    myLocationTrackingMode: MyLocationTrackingMode.Tracking,
+                  ),
                 ),
-                myLocationEnabled: true,
-                myLocationTrackingMode: MyLocationTrackingMode.Tracking,
+                if (_isFloatingWidgetVisible) _buildFloatingWidget(),
+              ],
+            ),
+          ),
+          drawer: _buildUserDrawer(),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+            items: [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.library_books),
+                label: 'Catalog',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.map),
+                label: 'Terminals',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.directions),
+                label: 'Routing',
               ),
             ],
           ),
-          drawer: _buildUserDrawer(), // Main drawer with user info
-          endDrawer: _buildRouteDrawer(), // Route drawer accessible from the right
         );
       },
     );
   }
 
-  void _openRouteDrawer() {
-    if (_mapController.selectedTerminal != null) {
-      setState(() {});
-      Future.delayed(Duration(milliseconds: 200), () {
-        _scaffoldKey.currentState?.openEndDrawer(); // Open the route drawer from the right side
-      });
-    }
+  Widget _buildFloatingWidget() {
+    return Positioned(
+      top: 60,
+      left: MediaQuery.of(context).size.width * 0.25,
+      right: MediaQuery.of(context).size.width * 0.25,
+      child: GestureDetector(
+        onTap: () {},
+        child: Card(
+          elevation: 4,
+          child: Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: Column(
+              children: [
+                if (_floatingWidgetData != null) ...[
+                  Text(
+                    _floatingWidgetData!['name'] ?? 'Terminal Name',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(_floatingWidgetData!['description'] ?? 'No description available'),
+                  SizedBox(height: 8),
+                  Image.network(
+                    _floatingWidgetData!['imageUrl'] ?? '',
+                    width: 200,
+                    height: 100,
+                    fit: BoxFit.cover,
+                  ),
+                ],
+                IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: _closeFloatingWidget,
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_mapController.selectedTerminal != null) {
+                      _mapController.clearCurrentPolylines();
+                      _mapController.displayRoute(_mapController.selectedTerminal!.routes.first);
+                    }
+                  },
+                  child: Text('View Route'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildUserDrawer() {
@@ -132,88 +256,67 @@ class _MapPageState extends State<MapPage> {
               children: [
                 Icon(Icons.account_circle, size: 60, color: Colors.white),
                 SizedBox(width: 16),
-                FutureBuilder<DocumentSnapshot>(
-                  future: _userData,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      return Text('Error fetching user data');
-                    } else if (!snapshot.hasData || !snapshot.data!.exists) {
-                      return Text('User Info not available');
-                    }
+                _guestUserData != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome, ${_guestUserData!['firstName']} ${_guestUserData!['lastName']}',
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          Text(
+                            'Username: ${_guestUserData!['username']}',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                                                  ],
+                      )
+                    : FutureBuilder<DocumentSnapshot>(
+                        future: _userData,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return CircularProgressIndicator();
+                          } else if (snapshot.hasError) {
+                            return Text('Error fetching user data');
+                          } else if (!snapshot.hasData || !snapshot.data!.exists) {
+                            return Text('User Info not available');
+                          }
 
-                    var userData = snapshot.data!.data() as Map<String, dynamic>;
+                          var userData = snapshot.data!.data() as Map<String, dynamic>;
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome, ${userData['firstName']} ${userData['lastName']}',
-                          style: TextStyle(color: Colors.white, fontSize: 18),
-                        ),
-                        Text(
-                          'Username: ${userData['username']}',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Welcome, ${userData['firstName']} ${userData['lastName']}',
+                                style: TextStyle(color: Colors.white, fontSize: 18),
+                              ),
+                              Text(
+                                'Username: ${userData['username']}',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
               ],
             ),
-          ),
-          ListTile(
-            title: Text('Routes'),
-            onTap: () {
-              _openRouteDrawer();
-              Navigator.pop(context); // Close the user drawer
-            },
           ),
           SwitchListTile(
             title: Text('Dark Mode'),
             value: _isDarkMode,
             onChanged: _toggleDarkMode,
           ),
+          ListTile(
+            title: Text('Log Out'),
+            onTap: () {
+              FirebaseAuth.instance.signOut();
+              Navigator.of(context).pop(); // Close the drawer
+            },
+          ),
         ],
       ),
     );
   }
-
-  Widget _buildRouteDrawer() {
-    return Drawer(
-      child: ValueListenableBuilder<Terminal?>(
-        valueListenable: _mapController.selectedTerminalNotifier,
-        builder: (context, terminal, child) {
-          if (terminal == null) {
-            return Center(child: Text('No terminal selected'));
-          }
-
-          if (terminal.routes.isEmpty) {
-            return Center(child: Text('No routes available'));
-          }
-
-          return ListView.builder(
-            itemCount: terminal.routes.length,
-            itemBuilder: (context, index) {
-              final route = terminal.routes[index];
-              return ListTile(
-                title: Text(route.name),
-                onTap: () {
-                  Navigator.pop(context); // Close the route drawer
-                  _mapController.displayRoute(route);
-                },
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _mapController.dispose();
-    super.dispose();
-  }
 }
+
+                       

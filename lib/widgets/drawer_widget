@@ -1,0 +1,47 @@
+import 'package:flutter/material.dart';
+import 'terminal_model.dart';
+
+class TerminalRouteDrawer extends StatelessWidget {
+  final Terminal terminal;
+  final Function(RouteOption) onRouteSelected;
+
+  const TerminalRouteDrawer({Key? key, required this.terminal, required this.onRouteSelected}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: Column(
+        children: [
+          DrawerHeader(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(terminal.name, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Image.network(terminal.imageUrl, height: 100, fit: BoxFit.cover),
+                SizedBox(height: 8),
+                Text(terminal.description),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: terminal.routeOptions.length,
+              itemBuilder: (context, index) {
+                final route = terminal.routeOptions[index];
+                return ListTile(
+                  title: Text(route.routeDescription),
+                  trailing: Icon(Icons.directions),
+                  onTap: () {
+                    Navigator.of(context).pop(); // Close the drawer
+                    onRouteSelected(route); // Notify the parent widget
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
