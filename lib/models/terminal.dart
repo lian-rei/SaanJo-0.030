@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,7 +8,8 @@ class Terminal {
   final String iconImage;
   final List<LatLng> points;
   final LatLng landmarkCoordinates; 
-  List<Route> routes; // Make routes mutable
+  final String terminalImage; // New field for terminal image
+  List<Route> routes; 
 
   Terminal({
     required this.name,
@@ -17,13 +17,14 @@ class Terminal {
     required this.points,
     required this.routes,
     required this.landmarkCoordinates,
+    required this.terminalImage, // Include new field in constructor
   });
 
   // Factory constructor to create a Terminal from Firestore data
   factory Terminal.fromFirestore(Map<String, dynamic> data) {
     var pointsData = data['points'] ?? [];
     var routesData = data['routes'] ?? [];
-    var landmarkSpecificData = data ['landmarkCoordinates'] ?? {'latitude': 0.0, 'longitude': 0.0};
+    var landmarkSpecificData = data['landmarkCoordinates'] ?? {'latitude': 0.0, 'longitude': 0.0};
 
     return Terminal(
       name: data['name'] ?? 'Unnamed Terminal',
@@ -33,7 +34,7 @@ class Terminal {
               if (point is GeoPoint) {
                 return LatLng(point.latitude, point.longitude);
               }
-              return LatLng(0, 0); // Fallback for invalid point
+              return LatLng(0, 0);
             }).toList()
           : [],
       landmarkCoordinates: LatLng(
@@ -43,22 +44,31 @@ class Terminal {
       routes: (routesData is List)
           ? routesData.map((routeData) => Route.fromFirestore(routeData)).toList()
           : [],
+      terminalImage: data['terminalImage'] ?? '', // Include the new field
     );
   }
 
-  Future<Map<String, dynamic>?> fetchPlaceDetails(String accessToken, {double? latitude, double? longitude}) async {
+  Future<Map<String, dynamic>?> fetchPlaceDetails(String accessToken, String terminalName, {double? latitude, double? longitude}) async {
     // Use provided latitude and longitude or default to the first point
     final LatLng location = (latitude != null && longitude != null)
         ? LatLng(latitude, longitude)
         : points.isNotEmpty ? points.first : LatLng(0, 0); // Fallback
 
+    // Foursquare API URL for searching venues
     final String url =
-        'https://api.mapbox.com/geocoding/v5/mapbox.places/${location.longitude},${location.latitude}.json?access_token=$accessToken';
+        'https://api.foursquare.com/v3/places/search?query=&ll=${location.latitude},${location.longitude}&limit=1';
 
-    final response = await http.get(Uri.parse(url));
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'fsq3rgV6402ofALVKftiTn0po1al4GQstY7LOErKP+J0x9w=' // Add your API key here
+      },
+    );
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return data['features'].isNotEmpty ? data['features'][0] : null;
+      // Return the first venue found
+      return data['results'].isNotEmpty ? data['results'][0] : null;
     } else {
       throw Exception('Failed to load place details');
     }
@@ -69,17 +79,20 @@ class Route {
   final String name;
   final List<LatLng> points;
   final String color;
+  final List<LatLng> dropOffPoints; // New field for drop-off points
 
   Route({
     required this.name,
     required this.points,
     required this.color,
+    required this.dropOffPoints, // Add to constructor
   });
 
   // Factory constructor to create a Route from Firestore data
   factory Route.fromFirestore(Map<String, dynamic> data) {
     var pointsData = data['points'] ?? [];
     var color = data['color'] ?? '#000000'; // Default to black if color is not provided
+    var dropOffPointsData = data['dropOffPoints'] ?? []; // Fetch drop-off points
 
     return Route(
       name: data['name'] ?? 'Unnamed Route',
@@ -92,6 +105,14 @@ class Route {
             }).toList()
           : [],
       color: color,
+      dropOffPoints: (dropOffPointsData is List && dropOffPointsData.isNotEmpty)
+          ? dropOffPointsData.map((point) {
+              if (point is GeoPoint) {
+                return LatLng(point.latitude, point.longitude);
+              }
+              return LatLng(0, 0); // Fallback for invalid point
+            }).toList()
+          : [], // Initialize drop-off points
     );
   }
 
@@ -99,6 +120,7 @@ class Route {
   factory Route.fromMap(Map<String, dynamic> data) {
     var pointsData = data['points'] ?? [];
     var color = data['color'] ?? '#000000'; // Default to black if color is not provided
+    var dropOffPointsData = data['dropOffPoints'] ?? []; // Fetch drop-off points
 
     return Route(
       name: data['name'] ?? 'Unnamed Route',
@@ -111,44 +133,20 @@ class Route {
             }).toList()
           : [],
       color: color,
+      dropOffPoints: (dropOffPointsData is List && dropOffPointsData.isNotEmpty)
+          ? dropOffPointsData.map((point) {
+              if (point is GeoPoint) {
+                return LatLng(point.latitude, point.longitude);
+              }
+              return LatLng(0, 0); // Fallback for invalid point
+            }).toList()
+          : [], // Initialize drop-off points
     );
   }
-
-   List<LatLng> calculateDropOffPoints(double interval) {
-    List<LatLng> dropOffPoints = [];
-    double totalDistance = 0.0;
-
-    for (int i = 0; i < points.length - 1; i++) {
-      LatLng start = points[i];
-      LatLng end = points[i + 1];
-
-      double segmentDistance = calculateDistance(start, end);
-      totalDistance += segmentDistance;
-
-      // Calculate number of drop-off points in this segment
-      int numPoints = (segmentDistance / interval).floor();
-
-      for (int j = 1; j <= numPoints; j++) {
-        double fraction = j / (numPoints + 1);
-        double lat = start.latitude + (end.latitude - start.latitude) * fraction;
-        double lng = start.longitude + (end.longitude - start.longitude) * fraction;
-        dropOffPoints.add(LatLng(lat, lng));
-      }
-    }
-
-    return dropOffPoints;
-  }
-
-  double calculateDistance(LatLng start, LatLng end) {
-    const R = 6371000; // Radius of the earth in meters
-    double dLat = (end.latitude - start.latitude) * (3.14159 / 180);
-    double dLon = (end.longitude - start.longitude) * (3.14159 / 180);
-    
-    double a = 
-      (sin(dLat / 2) * sin(dLat / 2)) +
-      (cos(start.latitude * (3.14159 / 180)) * cos(end.latitude * (3.14159 / 180)) * 
-      sin(dLon / 2) * sin(dLon / 2)); 
-    double c = 2 * atan2(sqrt(a), sqrt(1 - a)); 
-    return R * c; // Distance in meters
-  }
+  
 }
+
+
+
+
+

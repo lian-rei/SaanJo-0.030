@@ -1,7 +1,28 @@
+buildscript {
+    ext.kotlin_version = '1.9.0' // Ensure this is compatible with your dependencies
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.3.0' // Ensure this matches your Android SDK version
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+
+        // Mapbox Maven repository
+        maven {
+            url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
+            credentials {
+                username = "mapbox"
+                password = providers.gradleProperty("MAPBOX_DOWNLOADS_TOKEN").get() // Ensure this is properly defined
+            }
+        }
     }
 }
 

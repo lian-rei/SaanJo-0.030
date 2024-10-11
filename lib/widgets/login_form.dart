@@ -106,11 +106,6 @@ class _LoginFormState extends State<LoginForm> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SquareTile(
-                      imagePath: 'assets/apple.png',
-                      onTap: _isLoading ? null : _signInWithGoogle,
-                    ),
-                    const SizedBox(width: 25),
-                    SquareTile(
                       imagePath: 'assets/Google.png',
                       onTap: _isLoading ? null : _signInWithGoogle,
                     ),
@@ -136,12 +131,6 @@ class _LoginFormState extends State<LoginForm> {
 
                 const SizedBox(height: 5.0),
 
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/developer_dashboard');
-                  },
-                  child: const Text('Go to Developer Dashboard'),
-                ),
               ],
             ),
           ),
@@ -151,6 +140,16 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   Future<void> _login() async {
+    String adminEmail = 'admin';
+    String adminPassword = 'admin321';
+
+    // Check for admin credentials
+    if (_emailController.text.trim() == adminEmail &&
+        _passwordController.text.trim() == adminPassword) {
+      Navigator.pushNamed(context, '/developer_dashboard');
+      return;
+    }
+
     if (_emailController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
       setState(() {
         _isLoading = true;

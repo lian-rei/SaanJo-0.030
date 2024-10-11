@@ -30,103 +30,107 @@ class _RegisterPageState extends State<RegisterPage> {
         backgroundColor: Colors.white,
       ),
       backgroundColor: Colors.white,
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/logo2.png', height: 250,
-            ),
-            const SizedBox(height: 10),
-            MyTextfield(
-              controller: _firstNameController,
-              hintText: 'First Name: ',
-              obscureText: false,
-            ),
-            const SizedBox(height: 10),
-            MyTextfield(
-              controller: _lastNameController,
-              hintText: 'Last Name: ',
-              obscureText: false,
-            ),
-            const SizedBox(height: 10),
-            MyTextfield(
-              controller: _usernameController,
-              hintText: 'Username: ',
-              obscureText: false,
-            ),
-            const SizedBox(height: 10),
-            MyTextfield(
-              controller: _emailController,
-              hintText: 'Email: ',
-              obscureText: false,
-            ),
-            const SizedBox(height: 10),
-            MyTextfield(
-              controller: _passwordController,
-              hintText: 'Password: ',
-              obscureText: true,
-            ),
-            const SizedBox(height: 10),
-            MyTextfield(
-              controller: _confirmPasswordController,
-              hintText: 'Confirm Password: ',
-              obscureText: true,
-            ),
-
-
-            const SizedBox(height: 16.0),
-            
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+        child: Center( // Center the content
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 400), // Set max width
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                CustomCheckbox(
-                  isChecked: _isTermsAccepted,
-                  onChanged: (bool? newValue) {
-                    setState(() {
-                      _isTermsAccepted = newValue ?? false;
-                    });
-                  },
+                Image.asset(
+                  'assets/logo2.png', height: 250,
                 ),
-                const SizedBox(width: 8.0),
-                GestureDetector(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Terms and Conditions Clicked'),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "I agree to the Terms and Conditions",
-                    style: TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
+                const SizedBox(height: 8),
+                MyTextfield(
+                  controller: _firstNameController,
+                  hintText: 'First Name:',
+                  obscureText: false,
+                ),
+                const SizedBox(height: 8),
+                MyTextfield(
+                  controller: _lastNameController,
+                  hintText: 'Last Name:',
+                  obscureText: false,
+                ),
+                const SizedBox(height: 8),
+                MyTextfield(
+                  controller: _usernameController,
+                  hintText: 'Username:',
+                  obscureText: false,
+                ),
+                const SizedBox(height: 8),
+                MyTextfield(
+                  controller: _emailController,
+                  hintText: 'Email:',
+                  obscureText: false,
+                ),
+                const SizedBox(height: 8),
+                MyTextfield(
+                  controller: _passwordController,
+                  hintText: 'Password:',
+                  obscureText: true,
+                ),
+                const SizedBox(height: 8),
+                MyTextfield(
+                  controller: _confirmPasswordController,
+                  hintText: 'Confirm Password:',
+                  obscureText: true,
+                ),
+
+                const SizedBox(height: 16.0),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CustomCheckbox(
+                      isChecked: _isTermsAccepted,
+                      onChanged: (bool? newValue) {
+                        setState(() {
+                          _isTermsAccepted = newValue ?? false;
+                        });
+                      },
                     ),
-                  ),
+                    const SizedBox(width: 8.0),
+                    GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Terms and Conditions Clicked'),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "I agree to the Terms and Conditions",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16.0),
+
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _register,
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text('Register'),
+                ),
+
+                const SizedBox(height: 16.0),
+
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Already have an account? Login here.'),
                 ),
               ],
             ),
-            
-            const SizedBox(height: 16.0),
-
-            ElevatedButton(
-              onPressed: _isLoading ? null : _register,
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Register'),
-            ),
-
-            const SizedBox(height: 16.0),
-
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Already have an account? Login here.'),
-            ),
-          ],
+          ),
         ),
       ),
     );
